@@ -59,10 +59,10 @@
             </objects>
             <point key="canvasLocation" x="1135" y="380"/>
         </scene>
-        <!--Rx Web View Navigation View Controller-->
+        <!--Navigation Controller-->
         <scene sceneID="BNI-Fc-N3e">
             <objects>
-                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="f6J-Gt-hc5" customClass="RxWebViewNavigationViewController" sceneMemberID="viewController">
+                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="f6J-Gt-hc5" sceneMemberID="viewController">
                     <toolbarItems/>
                     <simulatedStatusBarMetrics key="simulatedStatusBarMetrics" statusBarStyle="lightContent"/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="EcN-dP-Pot">

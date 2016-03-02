@@ -12,8 +12,9 @@
 #define boundsHeight self.view.bounds.size.height
 @interface RxWebViewController ()<UIWebViewDelegate,UINavigationBarDelegate>
 
-//@property (nonatomic)UIBarButtonItem* customBackBarItem;
-@property (nonatomic)UIBarButtonItem* closeButtonItem;
+//@property (strong, nonatomic) UIBarButtonItem* customBackBarItem;
+@property (strong, nonatomic) UIBarButtonItem* closeButtonItem;
+@property (strong, nonatomic) UILabel *hostInfoLabel;
 
 @property (strong, nonatomic) UIProgressView *progressView;
 @property (strong, nonatomic) NSTimer *timer;
@@ -70,17 +71,20 @@
 - (void)viewDidLoad{
     [super viewDidLoad];
     
+    if ([self respondsToSelector:@selector(edgesForExtendedLayout)]) {
+        self.edgesForExtendedLayout = UIRectEdgeNone;
+    }
+    
     self.title = @"";
-    self.view.backgroundColor = [UIColor whiteColor];
     
     //config navigation item
     self.navigationItem.leftItemsSupplementBackButton = YES;
     
     [self.view addSubview:self.webView];
-    [self.webView loadRequest:[NSURLRequest requestWithURL:self.url]];
+    [self.webView insertSubview:self.hostInfoLabel belowSubview:self.webView.scrollView];
+    [self.view addSubview:self.progressView];
     
-    [self.navigationController.navigationBar addSubview:self.progressView];
-    // Do any additional setup after loading the view.
+    [self.webView loadRequest:[NSURLRequest requestWithURL:self.url]];
 }
 
 -(void)viewDidDisappear:(BOOL)animated{
@@ -96,7 +100,7 @@
 
 #pragma mark - logic of push and pop snap shot views
 -(void)pushCurrentSnapshotViewWithRequest:(NSURLRequest*)request{
-//    NSLog(@"push with request %@",request);
+    NSLog(@"push with request %@",request);
     NSURLRequest* lastRequest = (NSURLRequest*)[[self.snapShotsArray lastObject] objectForKey:@"request"];
     
     //如果url是很奇怪的就不push
@@ -147,9 +151,9 @@
     self.prevSnapShotView.alpha = 1;
     self.view.backgroundColor = [UIColor blackColor];
     
-    [self.view addSubview:self.prevSnapShotView];
-    [self.view addSubview:self.swipingBackgoundView];
-    [self.view addSubview:self.currentSnapShotView];
+    [self.webView addSubview:self.prevSnapShotView];
+    [self.webView addSubview:self.swipingBackgoundView];
+    [self.webView addSubview:self.currentSnapShotView];
 }
 
 -(void)popSnapShotViewWithPanGestureDistance:(CGFloat)distance{
@@ -189,13 +193,14 @@
             self.prevSnapShotView.center = CGPointMake(boundsWidth/2, boundsHeight/2);
             self.swipingBackgoundView.alpha = 0;
         }completion:^(BOOL finished) {
-            [self.prevSnapShotView removeFromSuperview];
-            [self.swipingBackgoundView removeFromSuperview];
-            [self.currentSnapShotView removeFromSuperview];
+            
             [self.webView goBack];
             [self.snapShotsArray removeLastObject];
-            self.view.userInteractionEnabled = YES;
+            [self.currentSnapShotView removeFromSuperview];
+//            [self.prevSnapShotView removeFromSuperview];
+            [self.swipingBackgoundView removeFromSuperview];
             
+            self.view.userInteractionEnabled = YES;
             self.isSwipingBack = NO;
         }];
     }else{
@@ -228,7 +233,7 @@
         //弃用customBackBarItem，使用原生backButtonItem
 //        UIBarButtonItem *spaceButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
 //        spaceButtonItem.width = -6.5;
-        //        [self.navigationItem setLeftBarButtonItems:@[spaceButtonItem,self.customBackBarItem,self.closeButtonItem] animated:NO];
+//                [self.navigationItem setLeftBarButtonItems:@[spaceButtonItem,self.customBackBarItem,self.closeButtonItem] animated:NO];
         
     }else{
         self.navigationController.interactivePopGestureRecognizer.enabled = YES;
@@ -248,6 +253,7 @@
         }
     }else if (panGesture.state == UIGestureRecognizerStateCancelled || panGesture.state == UIGestureRecognizerStateEnded){
         [self endPopSnapShotView];
+        
     }else if (panGesture.state == UIGestureRecognizerStateChanged){
         [self popSnapShotViewWithPanGestureDistance:translation.x];
     }
@@ -279,6 +285,13 @@
     }
 }
 
+- (void)updateHostLabelWithRequest:(NSURLRequest *)request {
+    NSString *host = [request.URL host];
+    if (host) {
+        self.hostInfoLabel.text = [NSString stringWithFormat:@"网页由 %@ 提供", host];
+    }
+}
+
 #pragma mark - webView delegate
 - (void)webViewDidStartLoad:(UIWebView *)webView {
     [[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:YES];
@@ -290,7 +303,10 @@
 }
 
 -(BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType{
-//    NSLog(@"navigation type %d",navigationType);
+//    NSLog(@"navigation type %ld",(long)navigationType);
+    NSLog(@"url: %@",request.URL);
+    [self updateHostLabelWithRequest:request];
+    
     switch (navigationType) {
         case UIWebViewNavigationTypeLinkClicked: {
             [self pushCurrentSnapshotViewWithRequest:request];
@@ -317,7 +333,7 @@
             break;
         }
     }
-    [self updateNavigationItems];
+//    [self updateNavigationItems];
     return YES;
 }
 
@@ -331,6 +347,9 @@
     self.title = theTitle;
     
     self.loading = NO;
+    if (self.prevSnapShotView.superview) {
+        [self.prevSnapShotView removeFromSuperview];
+    }
 }
 
 - (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error {
@@ -344,7 +363,9 @@
         _webView = [[UIWebView alloc] initWithFrame:self.view.bounds];
         _webView.delegate = (id)self;
         _webView.scalesPageToFit = YES;
-        _webView.backgroundColor = [UIColor whiteColor];
+        _webView.contentMode = UIViewContentModeScaleAspectFit;
+        _webView.autoresizingMask=(UIViewAutoresizingFlexibleHeight |UIViewAutoresizingFlexibleWidth);
+//        _webView.backgroundColor = [UIColor whiteColor];
         [_webView addGestureRecognizer:self.swipePanGesture];
     }
     return _webView;
@@ -408,15 +429,25 @@
 
 - (UIProgressView *)progressView {
     if (!_progressView) {
-        CGRect navigaitonBarBounds = self.navigationController.navigationBar.bounds;
-        CGRect barFrame = CGRectMake(0, navigaitonBarBounds.size.height, navigaitonBarBounds.size.width, 2.0);
-        _progressView = [[UIProgressView alloc] initWithFrame:barFrame];
-        _progressView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
-        _progressView.tintColor = self.progressViewColor;//[UIColor colorWithRed:39.0/255 green:188.0/255 blue:128.0/255 alpha:1.0];
+        CGRect frame = CGRectMake(0, 0, self.view.frame.size.width, 2.0);
+        _progressView = [[UIProgressView alloc] initWithFrame:frame];
+        _progressView.autoresizingMask = UIViewAutoresizingFlexibleWidth ;
+        _progressView.tintColor = self.progressViewColor;
         _progressView.trackTintColor = [UIColor clearColor];
     }
     
     return _progressView;
+}
+
+- (UILabel *)hostInfoLabel {
+    if (!_hostInfoLabel) {
+        _hostInfoLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, self.view.frame.size.width, 20)];
+        _hostInfoLabel.textColor = [UIColor grayColor];
+        _hostInfoLabel.font = [UIFont systemFontOfSize:14];
+        _hostInfoLabel.textAlignment = NSTextAlignmentCenter;
+    }
+    
+    return _hostInfoLabel;
 }
 
 @end
