@@ -32,8 +32,8 @@
     self.title = @"RxWebViewController";
     
     self.label.delegate = self;
-    self.label.text = @"长者，指年纪大、辈分高、德高望重的人。一般多用于对别人的尊称，也可用于自称。能被称为长者的人往往具有丰富的人生经验，可以帮助年轻人提高姿势水平 https://github.com/roxasora";
-    self.label.text = @"长者，指年纪大、辈分高、德高望重的人。一般多用于对别人的尊称，也可用于自称。能被称为长者的人往往具有丰富的人生经验，可以帮助年轻人提高姿势水平 http://john.xiaoxinyong.com/credit/cards/check_join_card?card_id=30&user_token=cdCzd2h83Tgo1P1TXGOPogECIKUvlmN3AYLpGS6jQynW%2B7v%2BLJ0Smg%3D%3D https://github.com/roxasora http://www.baidu.com";
+
+    self.label.text = @"长者，指年纪大、辈分高、德高望重的人。一般多用于对别人的尊称，也可用于自称。能被称为长者的人往往具有丰富的人生经验，可以帮助年轻人提高姿势水平 https://github.com/roxasora http://www.baidu.com";
     self.label.customUrlArray = @[
                                   @{
                                       @"scheme":@"baidu",
